@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Qi Ascendant — 问道</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0d10;
+    --panel:#121820;
+    --panel2:#182029;
+    --line:#26313c;
+    --gold:#d4af6a;
+    --gold-dim:#8a7448;
+    --jade:#3fae7f;
+    --jade-dim:#245c44;
+    --crimson:#c1453d;
+    --parchment:#e9e2d0;
+    --muted:#7c8a95;
+    --shadow: 0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;height:100%;background:var(--ink);color:var(--parchment);
+    font-family:'Noto Sans',sans-serif; overflow:hidden; user-select:none;}
+  #app{position:fixed; inset:0; display:flex; flex-direction:column; background:
+      radial-gradient(ellipse at 50% -10%, #1b2530 0%, var(--ink) 60%);}
+  h1,h2,h3,.serif{font-family:'Noto Serif TC',serif;}
+  ::-webkit-scrollbar{width:0;height:0;}
+
+  /* ---------- TOP BAR ---------- */
+  #topbar{padding:10px 12px 8px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#141b23,#101620);
+    flex-shrink:0;}
+  #titleRow{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  #realmTitle{font-size:15px; letter-spacing:.5px;}
+  #realmTitle b{color:var(--gold); font-weight:700;}
+  #cycleTag{font-size:10px; color:var(--muted); border:1px solid var(--line); border-radius:20px; padding:2px 8px;}
+  #menuBtn{background:none;border:1px solid var(--line);color:var(--parchment);border-radius:10px;
+    width:34px;height:34px;font-size:16px;line-height:1;}
+
+  .resRow{display:flex; gap:10px; font-size:11.5px; color:var(--muted); flex-wrap:wrap;}
+  .resRow span b{color:var(--parchment); font-weight:600;}
+  .resRow .r-stone b{color:var(--gold);}
+  .resRow .r-herb b{color:var(--jade);}
+  .resRow .r-frag b{color:#b98bd6;}
+
+  #qiWrap{display:flex; align-items:center; gap:10px; margin-top:8px;}
+  #qiRing{width:52px;height:52px; border-radius:50%; flex-shrink:0; position:relative;
+    display:flex;align-items:center;justify-content:center;}
+  #qiRing::before{content:"";position:absolute; inset:4px; border-radius:50%; background:var(--panel);}
+  #qiRing span{position:relative; font-size:9px; font-weight:700; color:var(--gold); z-index:1;}
+  #qiBarOuter{flex:1;height:16px;background:#0d1319;border:1px solid var(--line);border-radius:10px;overflow:hidden;position:relative;}
+  #qiBarInner{height:100%;background:linear-gradient(90deg,var(--jade-dim),var(--jade));width:0%;transition:width .25s;}
+  #qiText{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#eaf5ee;font-weight:600;text-shadow:0 1px 2px #000;}
+
+  /* ---------- MAIN SCROLL AREA ---------- */
+  #main{flex:1; overflow-y:auto; padding:14px 14px 10px; }
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:var(--shadow);}
+  .card h3{margin:0 0 8px; font-size:14px; color:var(--gold); display:flex; align-items:center; gap:6px;}
+  .sub{color:var(--muted); font-size:12px; line-height:1.5; margin:0 0 10px;}
+  .row{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  button.act{background:linear-gradient(180deg,#22303c,#182028); color:var(--parchment); border:1px solid #33424f;
+    border-radius:10px; padding:10px 12px; font-size:13px; font-weight:600; letter-spacing:.2px;}
+  button.act:active{transform:scale(.97);}
+  button.gold{background:linear-gradient(180deg,#7a5c2c,#5c451f); border-color:#a4813f; color:#fff2d8;}
+  button.jade{background:linear-gradient(180deg,#245c44,#1a4433); border-color:#3c8664; color:#eafff3;}
+  button.crimson{background:linear-gradient(180deg,#7a2c26,#5c1f1b); border-color:#a44139; color:#ffe0dd;}
+  button:disabled{opacity:.4;}
+  button.small{padding:6px 10px; font-size:11.5px; border-radius:8px;}
+  button.wide{width:100%;}
+
+  /* Tap area (cultivate) */
+  #tapZone{width:100%; padding:26px 10px; border-radius:16px; text-align:center; border:1px dashed var(--gold-dim);
+    background:radial-gradient(circle at 50% 40%, rgba(212,175,106,.08), transparent 70%);}
+  #tapZone .glyph{font-size:44px; color:var(--gold); font-family:'Noto Serif TC',serif;}
+  #tapZone .hint{font-size:11px; color:var(--muted); margin-top:6px;}
+  #tapZone.pulse{animation:pulseTap .18s ease;}
+  @keyframes pulseTap{0%{transform:scale(1);}50%{transform:scale(.96);}100%{transform:scale(1);}}
+
+  .floatnum{position:absolute; color:var(--jade); font-weight:700; font-size:13px; pointer-events:none; animation:floatUp 0.9s ease-out forwards;}
+  @keyframes floatUp{0%{opacity:1; transform:translateY(0);}100%{opacity:0; transform:translateY(-40px);}}
+
+  .flash{position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:50;}
+  .flash.go{animation:flashGo .5s ease;}
+  @keyframes flashGo{0%{opacity:0;}15%{opacity:.85;}100%{opacity:0;}}
+
+  .tag{display:inline-block; font-size:10px; padding:2px 7px; border-radius:20px; border:1px solid var(--line); color:var(--muted);}
+  .tag.rare-common{color:#b8c2c9; border-color:#3a4650;}
+  .tag.rare-uncommon{color:#7fd6ab; border-color:#2f6c50;}
+  .tag.rare-rare{color:#7fb8ef; border-color:#31567c;}
+  .tag.rare-epic{color:#c79bef; border-color:#5c3d7c;}
+  .tag.rare-legendary{color:var(--gold); border-color:var(--gold-dim);}
+  .tag.rare-immortal{color:#ff9d8f; border-color:var(--crimson); box-shadow:0 0 8px rgba(193,69,61,.4);}
+
+  .listItem{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); gap:8px;}
+  .listItem:last-child{border-bottom:none;}
+  .itName{font-size:13px; font-weight:600;}
+  .itDesc{font-size:11px; color:var(--muted);}
+
+  #log{font-size:11.5px; color:var(--muted); max-height:120px; overflow-y:auto; line-height:1.6;}
+  #log div{border-left:2px solid var(--line); padding-left:8px; margin-bottom:4px;}
+  #log div.evt-good{border-color:var(--jade);}
+  #log div.evt-bad{border-color:var(--crimson);}
+  #log div.evt-gold{border-color:var(--gold);}
+
+  /* ---------- BOTTOM NAV ---------- */
+  #nav{display:flex; border-top:1px solid var(--line); background:#0d1319; flex-shrink:0; padding-bottom:env(safe-area-inset-bottom);}
+  .navBtn{flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 2px 7px; background:none; border:none; color:var(--muted); font-size:9.5px;}
+  .navBtn .ic{font-size:18px;}
+  .navBtn.active{color:var(--gold);}
+
+  /* ---------- SIDE PANEL (drawer) ---------- */
+  #overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; display:none;}
+  #drawer{position:fixed; top:0; right:0; bottom:0; width:82%; max-width:340px; background:var(--panel); z-index:41;
+    transform:translateX(100%); transition:transform .25s ease; display:flex; flex-direction:column; box-shadow:-10px 0 30px rgba(0,0,0,.5);}
+  #drawer.open{transform:translateX(0);}
+  #overlay.open{display:block;}
+  #drawerTabs{display:flex; border-bottom:1px solid var(--line);}
+  .dtab{flex:1; padding:12px 4px; text-align:center; font-size:11.5px; color:var(--muted); background:none; border:none; border-bottom:2px solid transparent;}
+  .dtab.active{color:var(--gold); border-color:var(--gold);}
+  #drawerBody{flex:1; overflow-y:auto; padding:12px;}
+
+  .barMini{height:8px; background:#0d1319; border:1px solid var(--line); border-radius:6px; overflow:hidden; margin-top:4px;}
+  .barMini i{display:block; height:100%; background:linear-gradient(90deg,var(--jade-dim),var(--jade));}
+
+  input[type=text], textarea{width:100%; background:#0d1319; border:1px solid var(--line); color:var(--parchment);
+    border-radius:8px; padding:8px; font-size:12px; font-family:monospace;}
+
+  .toast{position:fixed; top:14px; left:50%; transform:translateX(-50%); background:#1a2129; border:1px solid var(--gold-dim);
+    color:var(--parchment); padding:8px 16px; border-radius:20px; font-size:12px; z-index:60; opacity:0; pointer-events:none; transition:opacity .3s, top .3s;}
+  .toast.show{opacity:1; top:24px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div id="titleRow">
+      <div id="realmTitle">道 <b id="realmName">Mortal Body</b> · Stage <span id="stageName">1</span></div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div id="cycleTag">Cycle <span id="cycleNum">1</span></div>
+        <button id="menuBtn">☰</button>
+      </div>
+    </div>
+    <div class="resRow">
+      <span class="r-stone">💰 <b id="stoneCount">0</b></span>
+      <span class="r-herb">🌿 <b id="herbCount">0</b></span>
+      <span>✨ Insight <b id="compCount">0</b></span>
+      <span class="r-frag">☯ <b id="fragCount">0</b></span>
+    </div>
+    <div id="qiWrap">
+      <div id="qiRing"><span id="qiPct">0%</span></div>
+      <div id="qiBarOuter"><div id="qiBarInner"></div><div id="qiText">0 / 0 Qi</div></div>
+    </div>
+  </div>
+
+  <div id="main"></div>
+
+  <div id="nav">
+    <button class="navBtn active" data-tab="cultivate"><span class="ic">🧘</span>Cultivate</button>
+    <button class="navBtn" data-tab="explore"><span class="ic">🗺️</span>Explore</button>
+    <button class="navBtn" data-tab="combat"><span class="ic">⚔️</span>Trials</button>
+    <button class="navBtn" data-tab="dao"><span class="ic">📜</span>Dao Arts</button>
+    <button class="navBtn" data-tab="sect"><span class="ic">⛩️</span>Sect</button>
+  </div>
+</div>
+
+<div id="overlay"></div>
+<div id="drawer">
+  <div id="drawerTabs">
+    <button class="dtab active" data-dtab="bag">Bag</button>
+    <button class="dtab" data-dtab="ach">Feats</button>
+    <button class="dtab" data-dtab="save">Save</button>
+  </div>
+  <div id="drawerBody"></div>
+</div>
+
+<div class="flash" id="flash"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================= DATA ============================= */
+const REALMS = [
+  "Mortal Body","Qi Refining","Foundation Establishment","Core Formation","Nascent Soul",
+  "Soul Formation","Void Refinement","Body Integration","Mahayana","Tribulation Transcendence"
+];
+const STAGE_NAMES = ["Early I","Early II","Early III","Middle I","Middle II","Middle III","Late I","Late II","Peak"];
+
+const RARITY = ["common","uncommon","rare","epic","legendary","immortal"];
+const RARITY_LABEL = {common:"Common",uncommon:"Uncommon",rare:"Rare",epic:"Epic",legendary:"Legendary",immortal:"Immortal Relic"};
+const RARITY_MULT  = {common:1,uncommon:1.6,rare:2.6,epic:4.2,legendary:7,immortal:12};
+const RARITY_WEIGHT_BASE = {common:58,uncommon:26,rare:11,epic:4,legendary:0.9,immortal:0.1};
+
+const EQUIP_TYPES = {
+  weapon:  {label:"Weapon",   icon:"🗡️", stat:"power"},
+  robe:    {label:"Robe",     icon:"👘", stat:"defense"},
+  talisman:{label:"Talisman", icon:"🔯", stat:"qi"}
+};
+const WEAPON_NAMES = ["Wooden Sword","Iron Saber","Frost Edge Blade","Vermilion Bird Spear","Nine-Dragon Halberd","Star-Piercer","Void Reaper","Heaven-Splitter"];
+const ROBE_NAMES   = ["Cloth Robe","Leather Vestment","Silver Silk Robe","Jade Cloud Garment","Phoenix Feather Cloak","Astral Mantle","Immortal Feather Robe"];
+const TALI_NAMES   = ["Wooden Talisman","Jade Pendant","Spirit Gathering Charm","Soul Anchor Bead","Star Chart Compass","Heaven's Eye Talisman","Primordial Origin Bead"];
+
+const TECHNIQUES = [
+  {id:"tech_absorb",   name:"Basic Qi Absorption",     realm:0, cost:{stones:20},           desc:"+20% Qi gained from meditation.",       apply:s=>s.qiMult+=0.20},
+  {id:"tech_trance",   name:"Meditative Trance",       realm:1, cost:{stones:80},           desc:"Unlocks passive cultivation while away (idle Qi).", apply:s=>s.autoUnlocked=true},
+  {id:"tech_iron",     name:"Iron Body Technique",     realm:1, cost:{stones:60},           desc:"+15% combat power.",                    apply:s=>s.combatMult+=0.15},
+  {id:"tech_fortune",  name:"Fortune's Eye",           realm:1, cost:{stones:70},           desc:"+20% loot from exploration.",           apply:s=>s.exploreMult+=0.20},
+  {id:"tech_yang",     name:"Nine Yang Scripture",     realm:2, cost:{stones:220,herbs:10}, desc:"+50% Qi gained from meditation.",       apply:s=>s.qiMult+=0.50},
+  {id:"tech_alchemy",  name:"Alchemist's Insight",     realm:2, cost:{stones:180,herbs:8},  desc:"Alchemy costs 25% less and yields more.", apply:s=>s.alchemyMult+=0.25},
+  {id:"tech_sense",    name:"Spirit Sense",            realm:2, cost:{stones:200},          desc:"+30% chance of rare finds while exploring.", apply:s=>s.rareFindMult+=0.30},
+  {id:"tech_sword",    name:"Sword Heart Sutra",       realm:3, cost:{stones:400,herbs:20}, desc:"+35% combat power.",                    apply:s=>s.combatMult+=0.35},
+  {id:"tech_resist",   name:"Tribulation Resistance",  realm:3, cost:{stones:450,herbs:15}, desc:"+12% chance to survive Heavenly Tribulation.", apply:s=>s.tribMult+=0.12},
+  {id:"tech_undying",  name:"Undying Golden Body",     realm:4, cost:{stones:700,herbs:30}, desc:"Combat losses reduced by 50%.",         apply:s=>s.defenseMult+=0.50},
+  {id:"tech_void",     name:"Void Comprehension",      realm:5, cost:{stones:1200,herbs:40},desc:"+70% Qi gained, +10% tribulation chance.", apply:s=>{s.qiMult+=0.70; s.tribMult+=0.10;}},
+  {id:"tech_phoenix",  name:"Phoenix Rebirth Mantra",  realm:6, cost:{stones:2200,herbs:60},desc:"+60% combat power, halve combat losses further.", apply:s=>{s.combatMult+=0.60; s.defenseMult+=0.20;}},
+  {id:"tech_dao",      name:"Origin Dao Insight",      realm:8, cost:{stones:5000,herbs:120,frags:1}, desc:"All gains +100%. The final gate before ascension.", apply:s=>{s.qiMult+=1.0; s.combatMult+=1.0; s.exploreMult+=1.0;}},
+];
+
+const RECIPES = [
+  {id:"pill_qi",   name:"Qi Gathering Pill",  cost:{herbs:3, stones:10},  desc:"Instantly grants a burst of Qi equal to 5x your tap power.", give:{pillQi:1}},
+  {id:"pill_break", name:"Breakthrough Pill", cost:{herbs:6, stones:60},  desc:"Grants +25% success chance on your next Tribulation attempt.", give:{pillBreak:1}},
+  {id:"pill_heal", name:"Spirit Healing Elixir", cost:{herbs:4, stones:30}, desc:"Restores Qi lost from a failed Tribulation or a lost battle.", give:{pillHeal:1}},
+];
+
+const REGIONS = [
+  {id:"bamboo", name:"Whispering Bamboo Grove", minRealm:0, flavor:"A quiet grove where mortal herbs grow between the stones."},
+  {id:"ruins",  name:"Sunken Sect Ruins",       minRealm:1, flavor:"Crumbling halls of a sect lost to a forgotten tribulation."},
+  {id:"canyon", name:"Blackflame Canyon",       minRealm:3, flavor:"Volcanic rifts said to hide a demonic cultivator's cache."},
+  {id:"cloud",  name:"Cloudpeak Cliffs",        minRealm:5, flavor:"Where cranes nest above the mortal world, close to the heavens."},
+  {id:"abyss",  name:"Starless Abyss",          minRealm:7, flavor:"A tear in reality. Few who enter fully return unchanged."},
+];
+
+const MONSTER_NAMES = ["Wild Boar Spirit","Bandit Cultivator","Venomous Serpent","Rogue Blade Disciple","Stone Golem","Blood Bat Swarm",
+  "Corpse Puppet","Demonic Fox Spirit","Frost Wraith","Iron-Scale Wyrm","Void Shade","Fallen Immortal's Echo"];
+
+const SECTS = [
+  {id:"sword", name:"Azure Sword Sect",       desc:"Masters of the blade. +18% combat power.",     apply:s=>s.combatMult+=0.18},
+  {id:"pill",  name:"Verdant Alchemy Pavilion", desc:"Keepers of pill and herb. Alchemy 25% cheaper, better yield.", apply:s=>s.alchemyMult+=0.25},
+  {id:"dao",   name:"Boundless Dao Temple",    desc:"Seekers of pure cultivation. +18% Qi gained.", apply:s=>s.qiMult+=0.18},
+];
+const SECT_RANKS = ["Outer Disciple","Inner Disciple","Core Disciple","Elder","Grand Elder","Sect Elder Emeritus"];
+
+const ACHIEVEMENTS = [
+  {id:"a1", name:"First Breath of Qi", cond:s=>s.stats.breakthroughs>=1, reward:"+20 Spirit Stones", give:s=>s.spiritStones+=20},
+  {id:"a2", name:"Foundation Laid", cond:s=>s.realm>=2, reward:"+10 Insight", give:s=>s.comprehension+=10},
+  {id:"a3", name:"Golden Core Formed", cond:s=>s.realm>=3, reward:"+150 Spirit Stones", give:s=>s.spiritStones+=150},
+  {id:"a4", name:"Soul Ascendant", cond:s=>s.realm>=5, reward:"+30 Insight", give:s=>s.comprehension+=30},
+  {id:"a5", name:"Void Walker", cond:s=>s.realm>=6, reward:"+500 Spirit Stones", give:s=>s.spiritStones+=500},
+  {id:"a6", name:"First Blood", cond:s=>s.stats.wins>=1, reward:"+15 Spirit Stones", give:s=>s.spiritStones+=15},
+  {id:"a7", name:"Battle-Hardened", cond:s=>s.stats.wins>=25, reward:"+200 Spirit Stones", give:s=>s.spiritStones+=200},
+  {id:"a8", name:"Slayer of a Hundred Beasts", cond:s=>s.stats.wins>=100, reward:"+20 Insight", give:s=>s.comprehension+=20},
+  {id:"a9", name:"Devoted Disciple", cond:s=>s.sect!==null, reward:"+10 Insight", give:s=>s.comprehension+=10},
+  {id:"a10", name:"Master Alchemist", cond:s=>s.stats.pillsCrafted>=10, reward:"+100 Spirit Stones", give:s=>s.spiritStones+=100},
+  {id:"a11", name:"Relic Hunter", cond:s=>s.inventory.some(i=>i.rarity==="legendary"||i.rarity==="immortal")||Object.values(s.equipment).some(e=>e&&(e.rarity==="legendary"||e.rarity==="immortal")), reward:"+300 Spirit Stones", give:s=>s.spiritStones+=300},
+  {id:"a12", name:"Ten Thousand Taps", cond:s=>s.stats.totalTaps>=10000, reward:"+50 Insight", give:s=>s.comprehension+=50},
+  {id:"a13", name:"Heaven Defier", cond:s=>s.stats.tribulationsSurvived>=5, reward:"+400 Spirit Stones", give:s=>s.spiritStones+=400},
+  {id:"a14", name:"Reincarnated", cond:s=>s.cycle>=2, reward:"+1 Dao Fragment", give:s=>s.daoFragments+=1},
+  {id:"a15", name:"Immortal Ascension", cond:s=>s.realm>=9 && s.stage>=9, reward:"+5 Dao Fragments", give:s=>s.daoFragments+=5},
+];
+
+/* ============================= STATE ============================= */
+let state = null;
+function freshState(){
+  return {
+    realm:0, stage:1, qi:0,
+    spiritStones:50, herbs:0, comprehension:0,
+    daoFragments:0, cycle:1,
+    techniques:{}, // id:true
+    sect:null, sectRep:0, sectRank:0,
+    equipment:{weapon:null, robe:null, talisman:null},
+    inventory:[],
+    pillQi:0, pillBreak:0, pillHeal:0,
+    achievements:{},
+    log:[],
+    lastTick: Date.now(),
+    stats:{totalTaps:0, totalBattles:0, wins:0, breakthroughs:0, ascensions:0, pillsCrafted:0, tribulationsSurvived:0, totalQiEver:0}
+  };
+}
+
+/* derived multipliers recomputed from techniques + sect + fragments */
+function computeMods(s){
+  const m = {qiMult:0, combatMult:0, exploreMult:0, alchemyMult:0, rareFindMult:0, tribMult:0, defenseMult:0, autoUnlocked:false};
+  TECHNIQUES.forEach(t=>{ if(s.techniques[t.id]) t.apply(m); });
+  if(s.sect){ const sd = SECTS.find(x=>x.id===s.sect); if(sd) sd.apply(m); }
+  m.qiMult      += s.sectRank*0.03 + s.daoFragments*0.02;
+  m.combatMult  += s.sectRank*0.03;
+  m.exploreMult += s.sectRank*0.02;
+  return m;
+}
+
+function equipPower(s, stat){
+  let total = 0;
+  Object.values(s.equipment).forEach(it=>{ if(it && it.stat===stat) total += it.value; });
+  return total;
+}
+
+function levelIndex(realm, stage){ return realm*9 + (stage-1); }
+function qiRequirement(realm, stage){
+  return Math.round(50 * Math.pow(1.165, levelIndex(realm, stage)));
+}
+function tapPower(s){
+  const m = computeMods(s);
+  const base = 1 + s.comprehension*0.02 + equipPower(s,"qi")*0.4;
+  return Math.max(1, Math.round(base * (1+m.qiMult) * 10)/10);
+}
+function autoQiPerSec(s){
+  const m = computeMods(s);
+  if(!m.autoUnlocked) return 0;
+  return Math.round(tapPower(s) * 0.18 * 10)/10;
+}
+function combatPower(s){
+  const m = computeMods(s);
+  const base = 10 + levelIndex(s.realm,s.stage)*4 + equipPower(s,"power")*3;
+  return Math.round(base * (1+m.combatMult));
+}
+function defenseValue(s){
+  const m = computeMods(s);
+  return m.defenseMult + equipPower(s,"defense")*0.02;
+}
+
+/* ============================= PERSISTENCE ============================= */
+const SAVE_KEY = "qi_ascendant_save_v1";
+async function saveGame(silent){
+  state.lastTick = Date.now();
+  try{
+    await window.storage.set(SAVE_KEY, JSON.stringify(state), false);
+    if(!silent) toast("Progress saved to the heavens.");
+  }catch(e){
+    // fallback: keep in-memory only
+    if(!silent) toast("Saved locally (storage unavailable).");
+  }
+}
+async function loadGame(){
+  try{
+    const res = await window.storage.get(SAVE_KEY, false);
+    if(res && res.value){
+      state = JSON.parse(res.value);
+      applyOfflineProgress();
+      return;
+    }
+  }catch(e){ /* no save yet */ }
+  state = freshState();
+  pushLog("You awaken as a mortal, Qi stirring faintly within your dantian.", "gold");
+}
+function applyOfflineProgress(){
+  const now = Date.now();
+  const elapsedSec = Math.min(8*3600, Math.max(0,(now - (state.lastTick||now))/1000));
+  const rate = autoQiPerSec(state);
+  if(rate>0 && elapsedSec>30){
+    const gained = Math.round(rate*elapsedSec);
+    state.qi += gained;
+    state.stats.totalQiEver += gained;
+    pushLog(`While you were away, your idle cultivation gathered ${fmt(gained)} Qi (${fmtTime(elapsedSec)}).`, "good");
+  }
+  state.lastTick = now;
+}
+function exportSave(){ return btoa(unescape(encodeURIComponent(JSON.stringify(state)))); }
+function importSave(str){
+  try{
+    const obj = JSON.parse(decodeURIComponent(escape(atob(str.trim()))));
+    if(obj && typeof obj==="object" && "realm" in obj){
+      state = obj; saveGame(true); renderAll(); toast("Save imported.");
+    } else toast("Invalid save code.");
+  }catch(e){ toast("Could not read save code."); }
+}
+
+/* ============================= UTIL ============================= */
+function fmt(n){
+  n = Math.round(n);
+  if(n>=1e9) return (n/1e9).toFixed(2)+"B";
+  if(n>=1e6) return (n/1e6).toFixed(2)+"M";
+  if(n>=1e3) return (n/1e3).toFixed(1)+"K";
+  return n.toString();
+}
+function fmtTime(sec){
+  sec = Math.round(sec);
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60);
+  if(h>0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+function pushLog(msg, kind){
+  state.log.unshift({msg, kind: kind||"", t:Date.now()});
+  if(state.log.length>40) state.log.length = 40;
+}
+let toastTimer=null;
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove("show"), 1800);
+}
+function flashScreen(){
+  const f = document.getElementById("flash");
+  f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+}
+function weightedRarity(bonusMult){
+  const w = {};
+  let total = 0;
+  RARITY.forEach(r=>{
+    let wt = RARITY_WEIGHT_BASE[r];
+    if(r!=="common") wt *= (1+bonusMult);
+    w[r]=wt; total+=wt;
+  });
+  let roll = Math.random()*total;
+  for(const r of RARITY){ if(roll<w[r]) return r; roll-=w[r]; }
+  return "common";
+}
+function rollEquipment(realmIdx, rareBonus){
+  const type = ["weapon","robe","talisman"][Math.floor(Math.random()*3)];
+  const rarity = weightedRarity(rareBonus||0);
+  const names = type==="weapon"?WEAPON_NAMES:type==="robe"?ROBE_NAMES:TALI_NAMES;
+  const nameIdx = Math.min(names.length-1, Math.floor(realmIdx/1.3));
+  const name = names[nameIdx];
+  const baseVal = 4 + realmIdx*3;
+  const value = Math.round(baseVal * RARITY_MULT[rarity]);
+  return {id:"eq_"+Math.random().toString(36).slice(2,9), type, name, rarity, value, stat:EQUIP_TYPES[type].stat};
+}
+
+/* ============================= ACTIONS ============================= */
+function doTap(ev){
+  const gain = tapPower(state);
+  state.qi += gain;
+  state.stats.totalTaps++;
+  state.stats.totalQiEver += gain;
+  const zone = document.getElementById("tapZone");
+  if(zone){
+    zone.classList.remove("pulse"); void zone.offsetWidth; zone.classList.add("pulse");
+    spawnFloatNum(zone, "+"+fmt(gain));
+  }
+  checkAchievements();
+  renderTopBar();
+  if(state.currentTab==="cultivate") renderCultivateNumbers();
+}
+function spawnFloatNum(anchor, text){
+  const el = document.createElement("div");
+  el.className="floatnum"; el.textContent=text;
+  const rect = anchor.getBoundingClientRect();
+  el.style.left = (rect.left + rect.width/2 + (Math.random()*40-20))+"px";
+  el.style.top = (rect.top + 10)+"px";
+  el.style.position="fixed";
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 950);
+}
+
+function canBreakthroughStage(){ return state.qi >= qiRequirement(state.realm, state.stage); }
+
+function doStageBreakthrough(){
+  const req = qiRequirement(state.realm, state.stage);
+  if(state.qi < req) return;
+  const cost = Math.round(req*0.3);
+  if(state.spiritStones < cost){ toast("Not enough Spirit Stones to stabilize your foundation."); return; }
+  state.spiritStones -= cost;
+  state.qi -= req;
+  state.stage++;
+  state.stats.breakthroughs++;
+  pushLog(`You stabilize your cultivation, advancing to ${REALMS[state.realm]} — ${STAGE_NAMES[state.stage-1]}.`, "good");
+  checkAchievements(); saveGame(true); renderAll();
+}
+
+function doTribulation(){
+  if(state.realm>=REALMS.length-1){ toast("You stand at the peak. The path beyond is Ascension itself."); return; }
+  const req = qiRequirement(state.realm, state.stage);
+  if(state.qi < req) return;
+  const stoneCost = Math.round(req*0.6);
+  const herbCost = 5 + state.realm*4;
+  if(state.spiritStones<stoneCost || state.herbs<herbCost){
+    toast(`Tribulation requires ${fmt(stoneCost)} stones and ${herbCost} herbs.`); return;
+  }
+  state.spiritStones -= stoneCost; state.herbs -= herbCost;
+  const m = computeMods(state);
+  let chance = 0.45 + state.comprehension*0.004 + m.tribMult;
+  if(state.pillBreak>0){ chance += 0.25; state.pillBreak--; }
+  chance = Math.min(0.95, chance);
+  flashScreen();
+  if(Math.random() < chance){
+    state.realm++; state.stage=1; state.qi=0;
+    state.comprehension += 5;
+    state.stats.tribulationsSurvived++;
+    pushLog(`⚡ Heavenly Tribulation descends — lightning wreathes your body, but you EMERGE TRIUMPHANT, ascending to ${REALMS[state.realm]}!`, "gold");
+    toast("Tribulation survived! A new Realm opens before you.");
+  }else{
+    const loss = Math.round(state.qi*0.35);
+    state.qi -= loss;
+    state.comprehension = Math.max(0, state.comprehension-2);
+    pushLog(`⚡ Heavenly Tribulation strikes you down. You lose ${fmt(loss)} Qi and stagger, your comprehension shaken.`, "bad");
+    toast("Tribulation failed. The heavens are not yet satisfied.");
+  }
+  checkAchievements(); saveGame(true); renderAll();
+}
+
+function doAscendCycle(){
+  if(!(state.realm>=REALMS.length-1 && state.stage>=9)){ toast("You must reach the Peak of Tribulation Transcendence first."); return; }
+  const gained = Math.max(1, Math.floor(Math.sqrt(state.stats.totalQiEver)/60));
+  const keepAch = state.achievements, keepStats = state.stats, keepSectRank=state.sectRank, keepSect=state.sect, keepSectRep=state.sectRep;
+  const cycle = state.cycle+1, frags = state.daoFragments+gained;
+  state = freshState();
+  state.cycle = cycle; state.daoFragments = frags;
+  state.achievements = keepAch; state.stats = keepStats; state.stats.ascensions++;
+  state.sect = keepSect; state.sectRank = keepSectRank; state.sectRep = keepSectRep;
+  pushLog(`☯ You shed your mortal cultivation and are REINCARNATED into Cycle ${state.cycle}, carrying ${gained} Dao Fragments of permanent insight into the next life.`, "gold");
+  toast(`Reincarnated! +${gained} Dao Fragments (permanent).`);
+  checkAchievements(); saveGame(true); renderAll();
+}
+
+function doExplore(regionId){
+  const region = REGIONS.find(r=>r.id===regionId);
+  if(!region || state.realm < region.minRealm) return;
+  const m = computeMods(state);
+  const tier = state.realm+1;
+  const roll = Math.random();
+  let msg="", kind="good";
+  if(roll < 0.34){
+    const stones = Math.round((10+tier*8) * (1+m.exploreMult) * (0.7+Math.random()*0.6));
+    state.spiritStones += stones;
+    msg = `In the ${region.name}, you find a cache of ${fmt(stones)} Spirit Stones.`;
+  }else if(roll < 0.60){
+    const herbs = Math.round((2+tier) * (1+m.exploreMult*0.5) * (0.7+Math.random()*0.6));
+    state.herbs += herbs;
+    msg = `You forage ${herbs} spirit herbs among the ${region.name}.`;
+  }else if(roll < 0.82){
+    const item = rollEquipment(state.realm, m.rareFindMult);
+    state.inventory.push(item);
+    msg = `You unearth a ${RARITY_LABEL[item.rarity]} ${item.name}!`;
+    kind = (item.rarity==="legendary"||item.rarity==="immortal")?"gold":"good";
+  }else if(roll < 0.94){
+    fightMonster(true);
+    return;
+  }else{
+    const loss = Math.round(state.spiritStones*0.1);
+    state.spiritStones -= loss;
+    msg = `A rogue cultivator ambushes you in the ${region.name}, stealing ${fmt(loss)} Spirit Stones!`;
+    kind = "bad";
+  }
+  pushLog(msg, kind);
+  checkAchievements(); saveGame(true); renderTab();
+}
+
+function fightMonster(fromExplore){
+  const tier = state.realm+1;
+  const name = MONSTER_NAMES[Math.min(MONSTER_NAMES.length-1, state.realm + (Math.random()<0.3?1:0))];
+  const pPower = combatPower(state);
+  const mPower = Math.round(tier*14 * (0.75+Math.random()*0.5));
+  const winChance = pPower/(pPower+mPower);
+  state.stats.totalBattles++;
+  let msg, kind;
+  if(Math.random() < winChance){
+    state.stats.wins++;
+    const stones = Math.round((14+tier*10)*(0.8+Math.random()*0.5));
+    state.spiritStones += stones;
+    let extra = "";
+    if(Math.random()<0.30){ state.herbs += 1+Math.floor(Math.random()*3); extra=" and some herbs"; }
+    if(Math.random()<0.15){
+      const m = computeMods(state);
+      const item = rollEquipment(state.realm, m.rareFindMult);
+      state.inventory.push(item);
+      extra += ` and a ${RARITY_LABEL[item.rarity]} ${item.name}`;
+    }
+    msg = `${fromExplore?"You stumble upon and ":""}defeat the ${name} in battle, earning ${fmt(stones)} Spirit Stones${extra}.`;
+    kind="good";
+  }else{
+    const def = defenseValue(state);
+    const loss = Math.round(state.qi * 0.15 * Math.max(0.1,1-def));
+    if(state.pillHeal>0 && loss>0){ state.pillHeal--; msg = `You are wounded by the ${name} but a Spirit Healing Elixir mends you instantly.`; kind="good"; }
+    else{ state.qi = Math.max(0, state.qi-loss); msg = `The ${name} overpowers you. You retreat, losing ${fmt(loss)} Qi.`; kind="bad"; }
+  }
+  pushLog(msg, kind);
+  checkAchievements(); saveGame(true); renderTab();
+}
+
+function learnTechnique(id){
+  const t = TECHNIQUES.find(x=>x.id===id);
+  if(!t || state.techniques[id]) return;
+  if(state.realm < t.realm){ toast(`Requires ${REALMS[t.realm]} realm.`); return; }
+  const cost = t.cost;
+  if((cost.stones&&state.spiritStones<cost.stones) || (cost.herbs&&state.herbs<cost.herbs) || (cost.frags&&state.daoFragments<cost.frags)){
+    toast("Insufficient resources to comprehend this technique."); return;
+  }
+  if(cost.stones) state.spiritStones -= cost.stones;
+  if(cost.herbs) state.herbs -= cost.herbs;
+  if(cost.frags) state.daoFragments -= cost.frags;
+  state.techniques[id] = true;
+  pushLog(`You comprehend the ${t.name}, deepening your Dao.`, "gold");
+  checkAchievements(); saveGame(true); renderTab();
+}
+
+function craftRecipe(id){
+  const r = RECIPES.find(x=>x.id===id);
+  if(!r) return;
+  const m = computeMods(state);
+  const hc = Math.max(1, Math.round(r.cost.herbs*(1-m.alchemyMult)));
+  const sc = Math.max(1, Math.round(r.cost.stones*(1-m.alchemyMult)));
+  if(state.herbs<hc || state.spiritStones<sc){ toast("Not enough herbs / stones."); return; }
+  state.herbs -= hc; state.spiritStones -= sc;
+  if(r.give.pillQi) state.pillQi += r.give.pillQi;
+  if(r.give.pillBreak) state.pillBreak += r.give.pillBreak;
+  if(r.give.pillHeal) state.pillHeal += r.give.pillHeal;
+  state.stats.pillsCrafted++;
+  pushLog(`You brew a ${r.name}.`, "good");
+  checkAchievements(); saveGame(true); renderTab();
+}
+function usePillQi(){
+  if(state.pillQi<=0) return;
+  state.pillQi--;
+  const gain = Math.round(tapPower(state)*5);
+  state.qi += gain; state.stats.totalQiEver += gain;
+  pushLog(`You swallow a Qi Gathering Pill, gaining ${fmt(gain)} Qi instantly.`, "good");
+  saveGame(true); renderTab();
+}
+function usePillHeal(){
+  toast("Healing Elixirs are consumed automatically after a losing battle.");
+}
+
+function joinSect(id){
+  if(state.sect){ toast("You already belong to a sect."); return; }
+  state.sect = id; state.sectRep = 0; state.sectRank = 0;
+  const s = SECTS.find(x=>x.id===id);
+  pushLog(`You swear the disciple's oath and join the ${s.name}.`, "gold");
+  checkAchievements(); saveGame(true); renderTab();
+}
+function doSectTask(){
+  if(!state.sect) return;
+  const cost = 10 + state.realm*8;
+  if(state.spiritStones<cost){ toast(`This mission costs ${cost} Spirit Stones to undertake.`); return; }
+  state.spiritStones -= cost;
+  const rep = 8 + Math.floor(Math.random()*10);
+  state.sectRep += rep;
+  const needed = 100 + state.sectRank*150;
+  let rankedUp=false;
+  if(state.sectRep >= needed && state.sectRank < SECT_RANKS.length-1){
+    state.sectRep -= needed; state.sectRank++; rankedUp=true;
+  }
+  pushLog(rankedUp? `Your sect mission succeeds brilliantly — you are promoted to ${SECT_RANKS[state.sectRank]}!` : `You complete a sect mission, earning ${rep} reputation.`, rankedUp?"gold":"good");
+  checkAchievements(); saveGame(true); renderTab();
+}
+
+function equipItem(itemId){
+  const idx = state.inventory.findIndex(i=>i.id===itemId);
+  if(idx<0) return;
+  const item = state.inventory[idx];
+  const prev = state.equipment[item.type];
+  state.equipment[item.type] = item;
+  state.inventory.splice(idx,1);
+  if(prev) state.inventory.push(prev);
+  toast(`Equipped ${item.name}.`);
+  saveGame(true); renderTab();
+}
+function unequipItem(type){
+  const item = state.equipment[type];
+  if(!item) return;
+  state.equipment[type] = null;
+  state.inventory.push(item);
+  renderDrawer();
+}
+function sellItem(itemId){
+  const idx = state.inventory.findIndex(i=>i.id===itemId);
+  if(idx<0) return;
+  const item = state.inventory[idx];
+  const price = Math.round(item.value * RARITY_MULT[item.rarity]*0 + item.value*1.2);
+  state.spiritStones += price;
+  state.inventory.splice(idx,1);
+  toast(`Sold ${item.name} for ${fmt(price)} stones.`);
+  saveGame(true); renderDrawer(); renderTopBar();
+}
+
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!state.achievements[a.id] && a.cond(state)){
+      state.achievements[a.id] = true;
+      a.give(state);
+      pushLog(`🏆 Feat unlocked: "${a.name}" — ${a.reward}`, "gold");
+    }
+  });
+}
+
+/* ============================= RENDER ============================= */
+function renderTopBar(){
+  document.getElementById("realmName").textContent = REALMS[state.realm];
+  document.getElementById("stageName").textContent = STAGE_NAMES[state.stage-1];
+  document.getElementById("cycleNum").textContent = state.cycle;
+  document.getElementById("stoneCount").textContent = fmt(state.spiritStones);
+  document.getElementById("herbCount").textContent = fmt(state.herbs);
+  document.getElementById("compCount").textContent = fmt(state.comprehension);
+  document.getElementById("fragCount").textContent = fmt(state.daoFragments);
+
+  const req = qiRequirement(state.realm, state.stage);
+  const pct = Math.min(100, Math.round(state.qi/req*100));
+  document.getElementById("qiBarInner").style.width = pct+"%";
+  document.getElementById("qiText").textContent = `${fmt(state.qi)} / ${fmt(req)} Qi`;
+  document.getElementById("qiPct").textContent = pct+"%";
+  document.getElementById("qiRing").style.background =
+    `conic-gradient(#3fae7f ${pct*3.6}deg, #1c2530 0deg)`;
+}
+
+function renderCultivateNumbers(){
+  const req = qiRequirement(state.realm, state.stage);
+  const el1 = document.getElementById("tapPowerVal");
+  const el2 = document.getElementById("autoRateVal");
+  if(el1) el1.textContent = fmt(tapPower(state));
+  if(el2) el2.textContent = computeMods(state).autoUnlocked ? fmt(autoQiPerSec(state))+"/s" : "locked";
+  const btBtn = document.getElementById("stageBreakBtn");
+  const trBtn = document.getElementById("tribBtn");
+  const asBtn = document.getElementById("ascendBtn");
+  if(btBtn) btBtn.disabled = state.qi < req || state.stage>=9;
+  if(trBtn) trBtn.disabled = state.qi < req || state.stage<9 || state.realm>=REALMS.length-1;
+  if(asBtn) asBtn.disabled = !(state.realm>=REALMS.length-1 && state.stage>=9);
+}
+
+const TABS = {
+  cultivate: renderCultivateTab,
+  explore: renderExploreTab,
+  combat: renderCombatTab,
+  dao: renderDaoTab,
+  sect: renderSectTab
+};
+
+function renderTab(){
+  const main = document.getElementById("main");
+  main.innerHTML = "";
+  (TABS[state.currentTab]||renderCultivateTab)(main);
+  renderTopBar();
+}
+function renderAll(){ renderTab(); renderTopBar(); }
+
+function renderCultivateTab(main){
+  const req = qiRequirement(state.realm, state.stage);
+  main.innerHTML += `
+  <div class="card">
+    <h3>🧘 Cultivation Chamber</h3>
+    <p class="sub">Tap to circulate Qi through your meridians. Reach the required Qi to attempt a breakthrough.</p>
+    <div id="tapZone">
+      <div class="glyph">道</div>
+      <div class="hint">Tap the character to meditate</div>
+    </div>
+    <div class="grid2" style="margin-top:12px;">
+      <div>Qi per tap<br><b id="tapPowerVal" style="color:var(--jade); font-size:16px;">0</b></div>
+      <div>Idle rate<br><b id="autoRateVal" style="color:var(--gold); font-size:16px;">locked</b></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>⛰️ Breakthrough</h3>
+    <p class="sub">${state.stage<9
+      ? `Advance to ${STAGE_NAMES[state.stage]} within ${REALMS[state.realm]}. Costs Spirit Stones to stabilize.`
+      : (state.realm<REALMS.length-1
+          ? `You stand at the Peak. Only a Heavenly Tribulation can carry you into ${REALMS[state.realm+1]}.`
+          : `You have reached the pinnacle of mortal cultivation.`)}</p>
+    ${state.stage<9
+      ? `<button class="act jade wide" id="stageBreakBtn" onclick="doStageBreakthrough()">Stabilize & Advance (−${fmt(Math.round(req*0.3))} 💰)</button>`
+      : (state.realm<REALMS.length-1
+          ? `<button class="act crimson wide" id="tribBtn" onclick="doTribulation()">⚡ Face Heavenly Tribulation (−${fmt(Math.round(req*0.6))} 💰, −${5+state.realm*4} 🌿)</button>
+             <div style="height:8px;"></div>
+             <button class="act gold wide" id="ascendBtn" style="display:none;">Reincarnate</button>`
+          : `<button class="act gold wide" id="ascendBtn" onclick="doAscendCycle()">☯ Reincarnate — Begin a New Cycle</button>`)}
+  </div>
+
+  <div class="card">
+    <h3>📖 Event Log</h3>
+    <div id="log"></div>
+  </div>`;
+  const zone = document.getElementById("tapZone");
+  zone.addEventListener("click", doTap);
+  renderCultivateNumbers();
+  renderLog();
+}
+
+function renderLog(){
+  const log = document.getElementById("log");
+  if(!log) return;
+  log.innerHTML = state.log.slice(0,20).map(e=>`<div class="evt-${e.kind}">${e.msg}</div>`).join("") || "<div>The Dao is silent... for now.</div>";
+}
+
+function renderExploreTab(main){
+  main.innerHTML += `<div class="card"><h3>🗺️ Venture Forth</h3><p class="sub">Explore regions of the world for Spirit Stones, herbs, equipment, and danger. Higher realms unlock deeper, richer regions.</p></div>`;
+  REGIONS.forEach(r=>{
+    const locked = state.realm < r.minRealm;
+    main.innerHTML += `
+    <div class="card" style="${locked?'opacity:.5;':''}">
+      <h3>${locked?"🔒":"🌄"} ${r.name}</h3>
+      <p class="sub">${r.flavor}</p>
+      ${locked
+        ? `<span class="tag">Requires ${REALMS[r.minRealm]}</span>`
+        : `<button class="act jade wide" onclick="doExplore('${r.id}')">Explore</button>`}
+    </div>`;
+  });
+}
+
+function renderCombatTab(main){
+  const pw = combatPower(state);
+  main.innerHTML += `
+  <div class="card">
+    <h3>⚔️ Trial Grounds</h3>
+    <p class="sub">Seek out beasts and rogue cultivators to test your strength. Victory brings Spirit Stones, herbs, and rare equipment.</p>
+    <div class="row"><span>Your Combat Power</span><b style="color:var(--gold)">${fmt(pw)}</b></div>
+    <div class="row"><span>Damage Reduction</span><b style="color:var(--jade)">${Math.round(defenseValue(state)*100)}%</b></div>
+    <button class="act crimson wide" style="margin-top:10px;" onclick="fightMonster(false)">Seek a Battle</button>
+  </div>
+  <div class="card">
+    <h3>🧪 Consumables</h3>
+    <div class="listItem"><div><div class="itName">Spirit Healing Elixir</div><div class="itDesc">Auto-consumed to negate combat losses.</div></div><b>${state.pillHeal}</b></div>
+    <div class="listItem"><div><div class="itName">Breakthrough Pill</div><div class="itDesc">+25% next Tribulation chance.</div></div><b>${state.pillBreak}</b></div>
+  </div>
+  <div class="card"><h3>📖 Recent Battles</h3><div id="log"></div></div>`;
+  renderLog();
+}
+
+function renderDaoTab(main){
+  main.innerHTML += `<div class="card"><h3>📜 Techniques</h3><p class="sub">Comprehend techniques to permanently strengthen your cultivation. Requires the appropriate Realm.</p></div>`;
+  TECHNIQUES.forEach(t=>{
+    const learned = !!state.techniques[t.id];
+    const locked = state.realm < t.realm;
+    main.innerHTML += `
+    <div class="card" style="${locked&&!learned?'opacity:.5;':''}">
+      <div class="row"><h3 style="margin:0;">${learned?"✅":"📘"} ${t.name}</h3>
+        ${!learned?`<span class="tag">${REALMS[t.realm]}</span>`:''}</div>
+      <p class="sub">${t.desc}</p>
+      ${learned ? `<span class="tag rare-legendary">Mastered</span>` :
+        `<button class="act gold wide" ${locked?'disabled':''} onclick="learnTechnique('${t.id}')">Comprehend — ${t.cost.stones?fmt(t.cost.stones)+' 💰 ':''}${t.cost.herbs?t.cost.herbs+' 🌿 ':''}${t.cost.frags?t.cost.frags+' ☯':''}</button>`}
+    </div>`;
+  });
+  main.innerHTML += `<div class="card"><h3>⚗️ Alchemy</h3><p class="sub">Combine herbs and stones into pills.</p></div>`;
+  RECIPES.forEach(r=>{
+    const m = computeMods(state);
+    const hc = Math.max(1, Math.round(r.cost.herbs*(1-m.alchemyMult)));
+    const sc = Math.max(1, Math.round(r.cost.stones*(1-m.alchemyMult)));
+    main.innerHTML += `
+    <div class="card">
+      <h3>${r.name}</h3>
+      <p class="sub">${r.desc}</p>
+      <button class="act jade wide" onclick="craftRecipe('${r.id}')">Craft — ${sc} 💰 · ${hc} 🌿</button>
+    </div>`;
+  });
+  main.innerHTML += `
+  <div class="card">
+    <h3>🎒 Pill Pouch</h3>
+    <div class="listItem"><div><div class="itName">Qi Gathering Pill</div><div class="itDesc">Tap to consume for instant Qi.</div></div>
+      <button class="act small gold" onclick="usePillQi()" ${state.pillQi<=0?'disabled':''}>Use (${state.pillQi})</button></div>
+  </div>`;
+}
+
+function renderSectTab(main){
+  if(!state.sect){
+    main.innerHTML += `<div class="card"><h3>⛩️ Choose Your Sect</h3><p class="sub">Joining a sect grants a permanent passive bonus and access to sect missions.</p></div>`;
+    SECTS.forEach(s=>{
+      main.innerHTML += `<div class="card"><h3>${s.name}</h3><p class="sub">${s.desc}</p><button class="act gold wide" onclick="joinSect('${s.id}')">Swear the Disciple's Oath</button></div>`;
+    });
+  }else{
+    const s = SECTS.find(x=>x.id===state.sect);
+    const needed = 100 + state.sectRank*150;
+    const pct = Math.min(100, Math.round(state.sectRep/needed*100));
+    main.innerHTML += `
+    <div class="card">
+      <h3>⛩️ ${s.name}</h3>
+      <p class="sub">${s.desc}</p>
+      <div class="row"><span>Rank</span><b style="color:var(--gold)">${SECT_RANKS[state.sectRank]}</b></div>
+      <div class="barMini"><i style="width:${pct}%"></i></div>
+      <div class="sub" style="margin-top:4px;">${fmt(state.sectRep)} / ${fmt(needed)} reputation</div>
+    </div>
+    <div class="card">
+      <h3>📋 Sect Mission</h3>
+      <p class="sub">Undertake a task assigned by the sect elders to earn reputation.</p>
+      <button class="act jade wide" onclick="doSectTask()">Undertake Mission — ${10+state.realm*8} 💰</button>
+    </div>`;
+  }
+}
+
+/* ---------- DRAWER (Bag / Achievements / Save) ---------- */
+let drawerTab = "bag";
+function renderDrawer(){
+  const body = document.getElementById("drawerBody");
+  if(drawerTab==="bag") body.innerHTML = bagHTML();
+  else if(drawerTab==="ach") body.innerHTML = achHTML();
+  else body.innerHTML = saveHTML();
+  if(drawerTab==="save") wireSaveButtons();
+}
+function bagHTML(){
+  let html = `<h3 class="serif" style="color:var(--gold); margin-top:0;">Equipped</h3>`;
+  ["weapon","robe","talisman"].forEach(type=>{
+    const it = state.equipment[type];
+    const t = EQUIP_TYPES[type];
+    html += `<div class="listItem"><div>
+      <div class="itName">${t.icon} ${t.label}</div>
+      <div class="itDesc">${it? it.name+" · +"+it.value+" "+t.stat : "None equipped"}</div>
+      ${it?`<span class="tag rare-${it.rarity}">${RARITY_LABEL[it.rarity]}</span>`:''}
+      </div>
+      ${it?`<button class="act small" onclick="unequipItem('${type}')">Remove</button>`:''}
+      </div>`;
+  });
+  html += `<h3 class="serif" style="color:var(--gold);">Inventory (${state.inventory.length})</h3>`;
+  if(state.inventory.length===0) html += `<p class="sub">Empty. Explore or battle to find relics.</p>`;
+  state.inventory.slice().sort((a,b)=>RARITY.indexOf(b.rarity)-RARITY.indexOf(a.rarity)).forEach(it=>{
+    html += `<div class="listItem"><div>
+      <div class="itName">${EQUIP_TYPES[it.type].icon} ${it.name}</div>
+      <div class="itDesc">+${it.value} ${it.stat} <span class="tag rare-${it.rarity}">${RARITY_LABEL[it.rarity]}</span></div>
+      </div>
+      <div style="display:flex; gap:4px;">
+      <button class="act small jade" onclick="equipItem('${it.id}')">Equip</button>
+      <button class="act small" onclick="sellItem('${it.id}')">Sell</button>
+      </div></div>`;
+  });
+  return html;
+}
+function achHTML(){
+  let html = `<h3 class="serif" style="color:var(--gold); margin-top:0;">Feats of the Dao</h3>`;
+  ACHIEVEMENTS.forEach(a=>{
+    const done = !!state.achievements[a.id];
+    html += `<div class="listItem"><div>
+      <div class="itName">${done?"🏆":"❔"} ${a.name}</div>
+      <div class="itDesc">${done? a.reward : "Not yet achieved"}</div>
+      </div></div>`;
+  });
+  return html;
+}
+function saveHTML(){
+  return `
+  <h3 class="serif" style="color:var(--gold); margin-top:0;">Save & Restore</h3>
+  <p class="sub">Your progress autosaves every 20 seconds and whenever you take an action. You can also back up your journey as a code.</p>
+  <button class="act jade wide" id="btnSaveNow">Save Now</button>
+  <div style="height:8px;"></div>
+  <button class="act gold wide" id="btnExport">Copy Save Code</button>
+  <textarea id="exportBox" rows="4" style="margin-top:8px;" readonly></textarea>
+  <div style="height:14px;"></div>
+  <h3 class="serif" style="color:var(--gold);">Import</h3>
+  <textarea id="importBox" rows="4" placeholder="Paste your save code here..."></textarea>
+  <div style="height:8px;"></div>
+  <button class="act wide" id="btnImport">Import Save</button>
+  <div style="height:14px;"></div>
+  <h3 class="serif" style="color:var(--crimson);">Danger Zone</h3>
+  <button class="act crimson wide" id="btnReset">Erase All Progress</button>
+  `;
+}
+function wireSaveButtons(){
+  document.getElementById("btnSaveNow").onclick = ()=>saveGame(false);
+  document.getElementById("btnExport").onclick = ()=>{
+    const box = document.getElementById("exportBox");
+    box.value = exportSave();
+    box.select();
+    try{ document.execCommand('copy'); toast("Save code copied."); }catch(e){ toast("Save code generated below."); }
+  };
+  document.getElementById("btnImport").onclick = ()=>{
+    const v = document.getElementById("importBox").value;
+    if(v.trim()) importSave(v);
+  };
+  document.getElementById("btnReset").onclick = ()=>{
+    if(confirm("This will permanently erase your cultivation journey. Are you sure?")){
+      state = freshState();
+      saveGame(true); renderAll(); renderDrawer(); toast("Your journey begins anew.");
+    }
+  };
+}
+
+/* ============================= NAV WIRING ============================= */
+document.querySelectorAll(".navBtn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".navBtn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    state.currentTab = btn.dataset.tab;
+    renderTab();
+  });
+});
+document.getElementById("menuBtn").addEventListener("click", ()=>{
+  document.getElementById("drawer").classList.add("open");
+  document.getElementById("overlay").classList.add("open");
+  renderDrawer();
+});
+document.getElementById("overlay").addEventListener("click", closeDrawer);
+function closeDrawer(){
+  document.getElementById("drawer").classList.remove("open");
+  document.getElementById("overlay").classList.remove("open");
+}
+document.querySelectorAll(".dtab").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".dtab").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    drawerTab = btn.dataset.dtab;
+    renderDrawer();
+  });
+});
+
+/* ============================= GAME LOOP ============================= */
+async function init(){
+  await loadGame();
+  if(!state.currentTab) state.currentTab = "cultivate";
+  renderAll();
+  setInterval(tick, 1000);
+  setInterval(()=>saveGame(true), 20000);
+}
+function tick(){
+  const rate = autoQiPerSec(state);
+  if(rate>0){
+    state.qi += rate;
+    state.stats.totalQiEver += rate;
+  }
+  checkAchievements();
+  renderTopBar();
+  if(state.currentTab==="cultivate") renderCultivateNumbers();
+}
+window.addEventListener("beforeunload", ()=>{ try{ saveGame(true); }catch(e){} });
+init();
+</script>
+</body>
+</html>
