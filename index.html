@@ -325,22 +325,22 @@ const SAVE_KEY = "qi_ascendant_save_v1";
 async function saveGame(silent){
   state.lastTick = Date.now();
   try{
-    await window.storage.set(SAVE_KEY, JSON.stringify(state), false);
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
     if(!silent) toast("Progress saved to the heavens.");
   }catch(e){
-    // fallback: keep in-memory only
-    if(!silent) toast("Saved locally (storage unavailable).");
+    // fallback: keep in-memory only (e.g. private browsing with storage disabled)
+    if(!silent) toast("Could not save (browser storage unavailable).");
   }
 }
 async function loadGame(){
   try{
-    const res = await window.storage.get(SAVE_KEY, false);
-    if(res && res.value){
-      state = JSON.parse(res.value);
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw){
+      state = JSON.parse(raw);
       applyOfflineProgress();
       return;
     }
-  }catch(e){ /* no save yet */ }
+  }catch(e){ /* no save yet, or storage blocked */ }
   state = freshState();
   pushLog("You awaken as a mortal, Qi stirring faintly within your dantian.", "gold");
 }
@@ -1000,4 +1000,4 @@ window.addEventListener("beforeunload", ()=>{ try{ saveGame(true); }catch(e){} }
 init();
 </script>
 </body>
-</html>
+  </html>
