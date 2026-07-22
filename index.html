@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Qi Ascendant — 问道</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0a0d10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Qi Ascendant">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -38,6 +46,24 @@
   #cycleTag{font-size:10px; color:var(--muted); border:1px solid var(--line); border-radius:20px; padding:2px 8px;}
   #menuBtn{background:none;border:1px solid var(--line);color:var(--parchment);border-radius:10px;
     width:34px;height:34px;font-size:16px;line-height:1;}
+  #dailyBtn{background:none;border:1px solid var(--line);color:var(--parchment);border-radius:10px;
+    width:34px;height:34px;font-size:16px;line-height:1;}
+  #dailyBadge{position:absolute; top:-3px; right:-3px; width:9px;height:9px; border-radius:50%;
+    background:var(--crimson); display:none; box-shadow:0 0 0 2px var(--panel);}
+  #dailyBadge.on{display:block;}
+
+  #dailyOverlay{position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:80; display:none; align-items:center; justify-content:center; padding:20px;}
+  #dailyOverlay.open{display:flex;}
+  #dailyModal{background:var(--panel); border:1px solid var(--gold-dim); border-radius:16px; max-width:380px; width:100%; padding:18px; box-shadow:var(--shadow);}
+  #dailyModal h3{margin:0 0 4px; color:var(--gold); font-family:'Noto Serif TC',serif; text-align:center; font-size:17px;}
+  #dailyModal .sub{text-align:center;}
+  .dayGrid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin:14px 0;}
+  .dayCell{aspect-ratio:1; border-radius:8px; border:1px solid var(--line); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; font-size:9px; color:var(--muted); background:#0d1319; gap:2px;}
+  .dayCell .dn{font-size:12px;}
+  .dayCell.done{border-color:var(--jade); color:var(--jade); background:rgba(63,174,127,.12);}
+  .dayCell.today{border-color:var(--gold); color:var(--gold); box-shadow:0 0 8px rgba(212,175,106,.4);}
+  #dailyRewardText{text-align:center; font-size:12.5px; color:var(--parchment); margin-bottom:12px; line-height:1.6;}
 
   .resRow{display:flex; gap:10px; font-size:11.5px; color:var(--muted); flex-wrap:wrap;}
   .resRow span b{color:var(--parchment); font-weight:600;}
@@ -94,6 +120,10 @@
   .tag.rare-epic{color:#c79bef; border-color:#5c3d7c;}
   .tag.rare-legendary{color:var(--gold); border-color:var(--gold-dim);}
   .tag.rare-immortal{color:#ff9d8f; border-color:var(--crimson); box-shadow:0 0 8px rgba(193,69,61,.4);}
+
+  .setBonus{border-radius:12px; padding:10px 12px; margin-bottom:12px; font-size:12px; line-height:1.5;}
+  .setBonus.on{background:rgba(212,175,106,.10); border:1px solid var(--gold-dim); color:var(--gold);}
+  .setBonus.off{background:#0d1319; border:1px dashed var(--line); color:var(--muted);}
 
   .listItem{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); gap:8px;}
   .listItem:last-child{border-bottom:none;}
@@ -163,6 +193,7 @@
       <div id="realmTitle">道 <b id="realmName">Mortal Body</b> · Stage <span id="stageName">1</span></div>
       <div style="display:flex; align-items:center; gap:8px;">
         <div id="cycleTag">Cycle <span id="cycleNum">1</span></div>
+        <button id="dailyBtn" style="position:relative;">🎁<span id="dailyBadge"></span></button>
         <button id="menuBtn">☰</button>
       </div>
     </div>
@@ -194,6 +225,7 @@
   <div id="drawerTabs">
     <button class="dtab active" data-dtab="bag">Bag</button>
     <button class="dtab" data-dtab="ach">Feats</button>
+    <button class="dtab" data-dtab="stats">Stats</button>
     <button class="dtab" data-dtab="save">Save</button>
   </div>
   <div id="drawerBody"></div>
@@ -206,6 +238,18 @@
 <div id="combatModal">
   <div id="combatHeader">⚔️ Battle</div>
   <div id="combatBody"></div>
+</div>
+
+<div id="dailyOverlay">
+  <div id="dailyModal">
+    <h3>🎁 Daily Blessing</h3>
+    <p class="sub" id="dailyStreakText">Day 1 of your devotion streak</p>
+    <div class="dayGrid" id="dailyGrid"></div>
+    <div id="dailyRewardText"></div>
+    <button class="act gold wide" id="dailyClaimBtn" onclick="claimDailyReward()">Claim Reward</button>
+    <div style="height:8px;"></div>
+    <button class="act small wide" onclick="closeDailyModal()">Close</button>
+  </div>
 </div>
 
 <script>
@@ -226,9 +270,46 @@ const EQUIP_TYPES = {
   robe:    {label:"Robe",     icon:"👘", stat:"defense"},
   talisman:{label:"Talisman", icon:"🔯", stat:"qi"}
 };
-const WEAPON_NAMES = ["Wooden Sword","Iron Saber","Frost Edge Blade","Vermilion Bird Spear","Nine-Dragon Halberd","Star-Piercer","Void Reaper","Heaven-Splitter"];
-const ROBE_NAMES   = ["Cloth Robe","Leather Vestment","Silver Silk Robe","Jade Cloud Garment","Phoenix Feather Cloak","Astral Mantle","Immortal Feather Robe"];
-const TALI_NAMES   = ["Wooden Talisman","Jade Pendant","Spirit Gathering Charm","Soul Anchor Bead","Star Chart Compass","Heaven's Eye Talisman","Primordial Origin Bead"];
+/* Equipping a weapon, robe, and talisman that all share the same rarity tier grants a bonus
+   multiplier to Qi gain, combat power, exploration luck, and damage reduction. */
+const SET_BONUS_MULT = {common:0.05, uncommon:0.08, rare:0.12, epic:0.18, legendary:0.25, immortal:0.35};
+const WEAPON_NAMES = ["Wooden Sword","Iron Saber","Bronze Dagger","Frost Edge Blade","Vermilion Bird Spear","Serpent's Fang Whip",
+  "Nine-Dragon Halberd","Star-Piercer","Crimson Lotus Blade","Void Reaper","Heaven-Splitter","Origin Sword"];
+const ROBE_NAMES   = ["Cloth Robe","Padded Vestment","Leather Vestment","Silver Silk Robe","Jade Cloud Garment","Cloudweave Mantle",
+  "Phoenix Feather Cloak","Astral Mantle","Starfall Raiment","Immortal Feather Robe","Origin Vestment"];
+const TALI_NAMES   = ["Wooden Talisman","Clay Charm","Jade Pendant","Spirit Gathering Charm","Soul Anchor Bead","Crescent Moon Amulet",
+  "Star Chart Compass","Heaven's Eye Talisman","Nine-Star Seal","Primordial Origin Bead","Origin Compass"];
+
+/* Rarity-flavored naming: an epithet is prepended, and higher rarities may also receive an epic-sounding suffix,
+   so two items of the same base type and rarity rarely read identically. */
+const RARITY_EPITHETS = {
+  common:    ["Worn","Simple","Crude","Plain","Chipped","Dull"],
+  uncommon:  ["Sturdy","Polished","Sharpened","Reinforced","Tempered","Honed"],
+  rare:      ["Azure","Jade-Inlaid","Silver-Veined","Whispering","Moonlit","Storm-Kissed"],
+  epic:      ["Thunderclap","Bloodmoon","Frostbound","Starlit","Ember-Wreathed","Voidtouched"],
+  legendary: ["Heaven-Piercing","World-Ending","Nine-Heavens","Primordial","Sky-Rending","Dragon-Blooded"],
+  immortal:  ["Timeless","Reality-Rending","Ascendant","Origin-Touched","Boundless","Eternal-Dao"]
+};
+const RARITY_SUFFIXES = {
+  epic:      ["of the Tempest","of Searing Flame","of the Abyss","of Rising Thunder"],
+  legendary: ["of the Ascendant","of the Fallen Heavens","of Eternal Frost","of the Undying Blade"],
+  immortal:  ["of the Origin Dao","of Boundless Eternity","of the Nine Heavens","of Creation's Dawn"]
+};
+function pickFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function pickBaseName(names, realmIdx){
+  const center = Math.min(names.length-1, Math.floor(realmIdx/1.1));
+  const lo = Math.max(0, center-1), hi = Math.min(names.length-1, center+1);
+  return names[lo + Math.floor(Math.random()*(hi-lo+1))];
+}
+function buildItemName(type, rarity, realmIdx){
+  const pool = type==="weapon"?WEAPON_NAMES:type==="robe"?ROBE_NAMES:TALI_NAMES;
+  const base = pickBaseName(pool, realmIdx);
+  const epithet = pickFrom(RARITY_EPITHETS[rarity]);
+  let name = `${epithet} ${base}`;
+  const suffixPool = RARITY_SUFFIXES[rarity];
+  if(suffixPool && Math.random()<0.65) name += ` ${pickFrom(suffixPool)}`;
+  return name;
+}
 
 const TECHNIQUES = [
   {id:"tech_absorb",   name:"Basic Qi Absorption",     realm:0, cost:{stones:20},           desc:"+20% Qi gained from meditation.",       apply:s=>s.qiMult+=0.20},
@@ -326,6 +407,16 @@ const ACHIEVEMENTS = [
   {id:"a15", name:"Immortal Ascension", cond:s=>s.realm>=9 && s.stage>=9, reward:"+5 Dao Fragments", give:s=>s.daoFragments+=5},
 ];
 
+const DAILY_REWARDS = [
+  {label:"Spirit Stones",   give:s=>{ s.spiritStones += 40; }, text:"+40 Spirit Stones"},
+  {label:"Spirit Herbs",    give:s=>{ s.herbs += 8; }, text:"+8 Spirit Herbs"},
+  {label:"Insight",         give:s=>{ s.comprehension += 12; s.spiritStones += 30; }, text:"+12 Insight, +30 Spirit Stones"},
+  {label:"Qi Pills",        give:s=>{ s.pillQi += 2; }, text:"+2 Qi Gathering Pills"},
+  {label:"Healing Elixirs", give:s=>{ s.pillHeal += 2; s.spiritStones += 50; }, text:"+2 Healing Elixirs, +50 Spirit Stones"},
+  {label:"Breakthrough Pill", give:s=>{ s.pillBreak += 1; s.herbs += 10; }, text:"+1 Breakthrough Pill, +10 Herbs"},
+  {label:"Dao Fragment",    give:s=>{ s.daoFragments += 1; s.spiritStones += 150; }, text:"+1 Dao Fragment, +150 Spirit Stones (full week!)"},
+];
+
 /* ============================= STATE ============================= */
 let state = null;
 function freshState(){
@@ -341,18 +432,53 @@ function freshState(){
     achievements:{},
     log:[],
     lastTick: Date.now(),
-    stats:{totalTaps:0, totalBattles:0, wins:0, breakthroughs:0, ascensions:0, pillsCrafted:0, tribulationsSurvived:0, totalQiEver:0}
+    settings:{sound:true, vibrate:true},
+    daily:{lastClaimDate:null, streak:0, totalClaims:0},
+    stats:{totalTaps:0, totalBattles:0, wins:0, breakthroughs:0, ascensions:0, pillsCrafted:0, tribulationsSurvived:0, totalQiEver:0, highestLevelIdx:0, playtimeSec:0}
   };
+}
+function normalizeState(s){
+  if(!s.stats) s.stats = {};
+  const defaults = {totalTaps:0,totalBattles:0,wins:0,breakthroughs:0,ascensions:0,pillsCrafted:0,tribulationsSurvived:0,totalQiEver:0,
+    highestLevelIdx: levelIndex(s.realm||0, s.stage||1), playtimeSec:0};
+  Object.keys(defaults).forEach(k=>{ if(typeof s.stats[k]==="undefined") s.stats[k]=defaults[k]; });
+  if(!s.settings) s.settings = {sound:true, vibrate:true};
+  if(typeof s.settings.sound==="undefined") s.settings.sound = true;
+  if(typeof s.settings.vibrate==="undefined") s.settings.vibrate = true;
+  if(!s.daily) s.daily = {lastClaimDate:null, streak:0, totalClaims:0};
+  if(typeof s.currentTab==="undefined") s.currentTab = "cultivate";
+  return s;
+}
+function trackHighest(){
+  const idx = levelIndex(state.realm, state.stage);
+  if(idx > state.stats.highestLevelIdx) state.stats.highestLevelIdx = idx;
 }
 
 /* derived multipliers recomputed from techniques + sect + fragments */
+function getSetBonus(s){
+  const eq = s.equipment;
+  if(!eq.weapon || !eq.robe || !eq.talisman) return null;
+  if(eq.weapon.rarity===eq.robe.rarity && eq.robe.rarity===eq.talisman.rarity){
+    const rarity = eq.weapon.rarity;
+    return {rarity, mult: SET_BONUS_MULT[rarity]};
+  }
+  return null;
+}
 function computeMods(s){
-  const m = {qiMult:0, combatMult:0, exploreMult:0, alchemyMult:0, rareFindMult:0, tribMult:0, defenseMult:0, autoUnlocked:false};
+  const m = {qiMult:0, combatMult:0, exploreMult:0, alchemyMult:0, rareFindMult:0, tribMult:0, defenseMult:0, autoUnlocked:false, setBonus:null};
   TECHNIQUES.forEach(t=>{ if(s.techniques[t.id]) t.apply(m); });
   if(s.sect){ const sd = SECTS.find(x=>x.id===s.sect); if(sd) sd.apply(m); }
   m.qiMult      += s.sectRank*0.03 + s.daoFragments*0.02;
   m.combatMult  += s.sectRank*0.03;
   m.exploreMult += s.sectRank*0.02;
+  const setBonus = getSetBonus(s);
+  if(setBonus){
+    m.setBonus = setBonus;
+    m.qiMult      += setBonus.mult;
+    m.combatMult  += setBonus.mult;
+    m.exploreMult += setBonus.mult;
+    m.defenseMult += setBonus.mult*0.6;
+  }
   return m;
 }
 
@@ -402,7 +528,7 @@ async function loadGame(){
   try{
     const raw = localStorage.getItem(SAVE_KEY);
     if(raw){
-      state = JSON.parse(raw);
+      state = normalizeState(JSON.parse(raw));
       applyOfflineProgress();
       return;
     }
@@ -427,9 +553,81 @@ function importSave(str){
   try{
     const obj = JSON.parse(decodeURIComponent(escape(atob(str.trim()))));
     if(obj && typeof obj==="object" && "realm" in obj){
-      state = obj; saveGame(true); renderAll(); toast("Save imported.");
+      state = normalizeState(obj); saveGame(true); renderAll(); toast("Save imported.");
     } else toast("Invalid save code.");
   }catch(e){ toast("Could not read save code."); }
+}
+
+/* ============================= DAILY LOGIN REWARDS ============================= */
+function todayStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function yesterdayStr(){
+  const d = new Date();
+  d.setDate(d.getDate()-1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function dailyAvailable(){
+  return state.daily.lastClaimDate !== todayStr();
+}
+function pendingStreakDay(){
+  // The streak position (1-7) the player is ABOUT to claim, without mutating state.
+  if(state.daily.lastClaimDate === yesterdayStr()) return (state.daily.streak % 7) + 1;
+  return 1; // first ever claim, or streak broken by a missed day
+}
+function updateDailyBadge(){
+  const badge = document.getElementById("dailyBadge");
+  if(badge) badge.classList.toggle("on", dailyAvailable());
+}
+function openDailyModal(){
+  document.getElementById("dailyOverlay").classList.add("open");
+  renderDailyModal();
+}
+function closeDailyModal(){
+  document.getElementById("dailyOverlay").classList.remove("open");
+}
+function renderDailyModal(){
+  const available = dailyAvailable();
+  const day = pendingStreakDay(); // 1-7, the reward about to be claimed (or just claimed today)
+  const displayDay = available ? day : ((state.daily.streak-1)%7)+1;
+  document.getElementById("dailyStreakText").textContent = available
+    ? `Day ${day} of your devotion streak`
+    : `Already claimed today — come back tomorrow for Day ${(day%7)+1}`;
+  const grid = document.getElementById("dailyGrid");
+  grid.innerHTML = DAILY_REWARDS.map((r,i)=>{
+    const n = i+1;
+    let cls = "";
+    if(n < displayDay || (!available && n<=displayDay)) cls = "done";
+    if(available && n===day) cls = "today";
+    return `<div class="dayCell ${cls}"><div class="dn">${n===7?"🎁":"Day"}</div><div>${n===7?"":n}</div></div>`;
+  }).join("");
+  const reward = DAILY_REWARDS[day-1];
+  document.getElementById("dailyRewardText").innerHTML = available
+    ? `Today's blessing: <b style="color:var(--gold)">${reward.text}</b>`
+    : `You already received: <b style="color:var(--gold)">${DAILY_REWARDS[displayDay-1].text}</b>`;
+  const btn = document.getElementById("dailyClaimBtn");
+  btn.disabled = !available;
+  btn.textContent = available ? "Claim Reward" : "Come Back Tomorrow";
+}
+function claimDailyReward(){
+  if(!dailyAvailable()) return;
+  const day = pendingStreakDay();
+  const reward = DAILY_REWARDS[day-1];
+  reward.give(state);
+  state.daily.streak = day;
+  state.daily.lastClaimDate = todayStr();
+  state.daily.totalClaims = (state.daily.totalClaims||0) + 1;
+  pushLog(`🎁 Daily Blessing (Day ${day}${day===7?" — full week!":""}): ${reward.text}.`, "gold");
+  toast(`Daily reward claimed: ${reward.text}`);
+  sfxBreakthrough();
+  updateDailyBadge();
+  checkAchievements(); saveGame(true); renderAll();
+  renderDailyModal();
+}
+function checkDailyOnLoad(){
+  updateDailyBadge();
+  if(dailyAvailable()) openDailyModal();
 }
 
 /* ============================= UTIL ============================= */
@@ -461,6 +659,57 @@ function flashScreen(){
   const f = document.getElementById("flash");
   f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
 }
+
+/* ---------- SOUND & HAPTICS ---------- */
+let audioCtx = null;
+function ensureAudio(){
+  if(audioCtx) { if(audioCtx.state==="suspended") audioCtx.resume(); return; }
+  try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+}
+function playTone(freq, duration, type, delay, vol){
+  if(!state.settings.sound || !audioCtx) return;
+  const t0 = audioCtx.currentTime + (delay||0);
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type||"sine";
+  osc.frequency.setValueAtTime(freq, t0);
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(vol||0.14, t0+0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0+duration);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(t0); osc.stop(t0+duration+0.03);
+}
+function hapticPulse(pattern){
+  if(!state.settings.vibrate) return;
+  try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+}
+function sfxTap(){
+  ensureAudio();
+  playTone(500+Math.random()*80, 0.09, "sine", 0, 0.10);
+  hapticPulse(8);
+}
+function sfxBreakthrough(){
+  ensureAudio();
+  [0,0.09,0.18,0.30].forEach((d,i)=>playTone(440*Math.pow(1.26,i), 0.28, "triangle", d, 0.15));
+  hapticPulse([25,40,25,40,60]);
+}
+function sfxTribSuccess(){
+  ensureAudio();
+  [0,0.10,0.20,0.32,0.46].forEach((d,i)=>playTone(392*Math.pow(1.22,i), 0.32, "triangle", d, 0.16));
+  hapticPulse([40,50,40,50,90]);
+}
+function sfxTribFail(){
+  ensureAudio();
+  playTone(200, 0.4, "sawtooth", 0, 0.13);
+  playTone(140, 0.5, "sawtooth", 0.12, 0.11);
+  hapticPulse([60,40,60]);
+}
+function sfxAscend(){
+  ensureAudio();
+  [0,0.12,0.24,0.36,0.48,0.62].forEach((d,i)=>playTone(330*Math.pow(1.2,i), 0.4, "sine", d, 0.14));
+  hapticPulse([30,30,30,30,30,30,100]);
+}
+
 function weightedRarity(bonusMult){
   const w = {};
   let total = 0;
@@ -476,9 +725,7 @@ function weightedRarity(bonusMult){
 function rollEquipment(realmIdx, rareBonus){
   const type = ["weapon","robe","talisman"][Math.floor(Math.random()*3)];
   const rarity = weightedRarity(rareBonus||0);
-  const names = type==="weapon"?WEAPON_NAMES:type==="robe"?ROBE_NAMES:TALI_NAMES;
-  const nameIdx = Math.min(names.length-1, Math.floor(realmIdx/1.3));
-  const name = names[nameIdx];
+  const name = buildItemName(type, rarity, realmIdx);
   const baseVal = 4 + realmIdx*3;
   const value = Math.round(baseVal * RARITY_MULT[rarity]);
   return {id:"eq_"+Math.random().toString(36).slice(2,9), type, name, rarity, value, stat:EQUIP_TYPES[type].stat};
@@ -495,6 +742,7 @@ function doTap(ev){
     zone.classList.remove("pulse"); void zone.offsetWidth; zone.classList.add("pulse");
     spawnFloatNum(zone, "+"+fmt(gain));
   }
+  sfxTap();
   checkAchievements();
   renderTopBar();
   if(state.currentTab==="cultivate") renderCultivateNumbers();
@@ -521,6 +769,8 @@ function doStageBreakthrough(){
   state.qi -= req;
   state.stage++;
   state.stats.breakthroughs++;
+  trackHighest();
+  sfxBreakthrough();
   pushLog(`You stabilize your cultivation, advancing to ${REALMS[state.realm]} — ${STAGE_NAMES[state.stage-1]}.`, "good");
   checkAchievements(); saveGame(true); renderAll();
 }
@@ -544,12 +794,15 @@ function doTribulation(){
     state.realm++; state.stage=1; state.qi=0;
     state.comprehension += 5;
     state.stats.tribulationsSurvived++;
+    trackHighest();
+    sfxTribSuccess();
     pushLog(`⚡ Heavenly Tribulation descends — lightning wreathes your body, but you EMERGE TRIUMPHANT, ascending to ${REALMS[state.realm]}!`, "gold");
     toast("Tribulation survived! A new Realm opens before you.");
   }else{
     const loss = Math.round(state.qi*0.35);
     state.qi -= loss;
     state.comprehension = Math.max(0, state.comprehension-2);
+    sfxTribFail();
     pushLog(`⚡ Heavenly Tribulation strikes you down. You lose ${fmt(loss)} Qi and stagger, your comprehension shaken.`, "bad");
     toast("Tribulation failed. The heavens are not yet satisfied.");
   }
@@ -559,12 +812,15 @@ function doTribulation(){
 function doAscendCycle(){
   if(!(state.realm>=REALMS.length-1 && state.stage>=9)){ toast("You must reach the Peak of Tribulation Transcendence first."); return; }
   const gained = Math.max(1, Math.floor(Math.sqrt(state.stats.totalQiEver)/60));
-  const keepAch = state.achievements, keepStats = state.stats, keepSectRank=state.sectRank, keepSect=state.sect, keepSectRep=state.sectRep;
+  const keepAch = state.achievements, keepStats = state.stats, keepSectRank=state.sectRank, keepSect=state.sect, keepSectRep=state.sectRep, keepSettings=state.settings, keepDaily=state.daily;
   const cycle = state.cycle+1, frags = state.daoFragments+gained;
   state = freshState();
   state.cycle = cycle; state.daoFragments = frags;
   state.achievements = keepAch; state.stats = keepStats; state.stats.ascensions++;
   state.sect = keepSect; state.sectRank = keepSectRank; state.sectRep = keepSectRep;
+  state.settings = keepSettings;
+  state.daily = keepDaily;
+  sfxAscend();
   pushLog(`☯ You shed your mortal cultivation and are REINCARNATED into Cycle ${state.cycle}, carrying ${gained} Dao Fragments of permanent insight into the next life.`, "gold");
   toast(`Reincarnated! +${gained} Dao Fragments (permanent).`);
   checkAchievements(); saveGame(true); renderAll();
@@ -1123,11 +1379,16 @@ function renderDrawer(){
   const body = document.getElementById("drawerBody");
   if(drawerTab==="bag") body.innerHTML = bagHTML();
   else if(drawerTab==="ach") body.innerHTML = achHTML();
+  else if(drawerTab==="stats") body.innerHTML = statsHTML();
   else body.innerHTML = saveHTML();
   if(drawerTab==="save") wireSaveButtons();
 }
 function bagHTML(){
-  let html = `<h3 class="serif" style="color:var(--gold); margin-top:0;">Equipped</h3>`;
+  const sb = getSetBonus(state);
+  let html = sb
+    ? `<div class="setBonus on">⚡ <b>${RARITY_LABEL[sb.rarity]} Set Bonus Active</b> — all three pieces share the same rarity, granting +${Math.round(sb.mult*100)}% to Qi gain, combat power, exploration luck, and damage reduction.</div>`
+    : `<div class="setBonus off">Equip a Weapon, Robe, and Talisman of the <b>same rarity</b> to activate a Set Bonus (up to +35% at Immortal rarity).</div>`;
+  html += `<h3 class="serif" style="color:var(--gold); margin-top:0;">Equipped</h3>`;
   ["weapon","robe","talisman"].forEach(type=>{
     const it = state.equipment[type];
     const t = EQUIP_TYPES[type];
@@ -1164,9 +1425,60 @@ function achHTML(){
   });
   return html;
 }
+function fmtPlaytime(sec){
+  sec = Math.round(sec||0);
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+  if(h>0) return `${h}h ${m}m`;
+  if(m>0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+function statsHTML(){
+  const st = state.stats;
+  const hi = st.highestLevelIdx||0;
+  const hiRealm = Math.floor(hi/9), hiStage = (hi%9)+1;
+  const winRate = st.totalBattles>0 ? Math.round(st.wins/st.totalBattles*100) : 0;
+  const row = (label, val)=>`<div class="listItem"><div class="itName">${label}</div><b>${val}</b></div>`;
+  return `
+  <h3 class="serif" style="color:var(--gold); margin-top:0;">Lifetime Record</h3>
+  <p class="sub">Statistics persist across every reincarnation cycle.</p>
+  ${row("Current Cycle", state.cycle)}
+  ${row("Highest Realm Reached", `${REALMS[hiRealm]} · ${STAGE_NAMES[hiStage-1]}`)}
+  ${row("Total Playtime", fmtPlaytime(st.playtimeSec))}
+  ${row("Total Qi Ever Gathered", fmt(st.totalQiEver||0))}
+  ${row("Total Taps", fmt(st.totalTaps||0))}
+  ${row("Stage Breakthroughs", fmt(st.breakthroughs||0))}
+  ${row("Tribulations Survived", fmt(st.tribulationsSurvived||0))}
+  ${row("Reincarnations (Ascensions)", fmt(st.ascensions||0))}
+  ${row("Dao Fragments Held", fmt(state.daoFragments||0))}
+  <h3 class="serif" style="color:var(--gold);">Combat Record</h3>
+  ${row("Battles Fought", fmt(st.totalBattles||0))}
+  ${row("Battles Won", fmt(st.wins||0))}
+  ${row("Win Rate", winRate+"%")}
+  <h3 class="serif" style="color:var(--gold);">Crafting & Sect</h3>
+  ${row("Pills Crafted", fmt(st.pillsCrafted||0))}
+  ${row("Sect", state.sect? SECTS.find(x=>x.id===state.sect).name : "Unaffiliated")}
+  ${row("Sect Rank", state.sect? SECT_RANKS[state.sectRank] : "—")}
+  <h3 class="serif" style="color:var(--gold);">Daily Devotion</h3>
+  ${row("Current Streak", `Day ${state.daily.streak||0} / 7`)}
+  ${row("Total Days Claimed", fmt(state.daily.totalClaims||0))}
+  `;
+}
 function saveHTML(){
   return `
-  <h3 class="serif" style="color:var(--gold); margin-top:0;">Save & Restore</h3>
+  <h3 class="serif" style="color:var(--gold); margin-top:0;">Sensory Feedback</h3>
+  <div class="listItem"><div>
+      <div class="itName">🔊 Sound Effects</div>
+      <div class="itDesc">Tap and breakthrough chimes.</div>
+    </div>
+    <button class="act small ${state.settings.sound?'jade':''}" id="btnToggleSound">${state.settings.sound?"On":"Off"}</button>
+  </div>
+  <div class="listItem"><div>
+      <div class="itName">📳 Haptic Vibration</div>
+      <div class="itDesc">Vibrate on tap and breakthrough (if supported).</div>
+    </div>
+    <button class="act small ${state.settings.vibrate?'jade':''}" id="btnToggleVibrate">${state.settings.vibrate?"On":"Off"}</button>
+  </div>
+  <h3 class="serif" style="color:var(--gold);">Save & Restore</h3>
   <p class="sub">Your progress autosaves every 20 seconds and whenever you take an action. You can also back up your journey as a code.</p>
   <button class="act jade wide" id="btnSaveNow">Save Now</button>
   <div style="height:8px;"></div>
@@ -1184,6 +1496,16 @@ function saveHTML(){
 }
 function wireSaveButtons(){
   document.getElementById("btnSaveNow").onclick = ()=>saveGame(false);
+  document.getElementById("btnToggleSound").onclick = ()=>{
+    state.settings.sound = !state.settings.sound;
+    if(state.settings.sound) ensureAudio();
+    saveGame(true); renderDrawer();
+  };
+  document.getElementById("btnToggleVibrate").onclick = ()=>{
+    state.settings.vibrate = !state.settings.vibrate;
+    if(state.settings.vibrate) hapticPulse(15);
+    saveGame(true); renderDrawer();
+  };
   document.getElementById("btnExport").onclick = ()=>{
     const box = document.getElementById("exportBox");
     box.value = exportSave();
@@ -1196,7 +1518,9 @@ function wireSaveButtons(){
   };
   document.getElementById("btnReset").onclick = ()=>{
     if(confirm("This will permanently erase your cultivation journey. Are you sure?")){
+      const keepSettings = state.settings;
       state = freshState();
+      state.settings = keepSettings;
       saveGame(true); renderAll(); renderDrawer(); toast("Your journey begins anew.");
     }
   };
@@ -1216,9 +1540,13 @@ document.getElementById("menuBtn").addEventListener("click", ()=>{
   document.getElementById("overlay").classList.add("open");
   renderDrawer();
 });
+document.getElementById("dailyBtn").addEventListener("click", openDailyModal);
 document.getElementById("overlay").addEventListener("click", closeDrawer);
 document.getElementById("combatOverlay").addEventListener("click", ()=>{
   if(combatState && combatState.ended) closeCombatModal();
+});
+document.getElementById("dailyOverlay").addEventListener("click", (e)=>{
+  if(e.target.id==="dailyOverlay") closeDailyModal();
 });
 function closeDrawer(){
   document.getElementById("drawer").classList.remove("open");
@@ -1238,6 +1566,7 @@ async function init(){
   await loadGame();
   if(!state.currentTab) state.currentTab = "cultivate";
   renderAll();
+  checkDailyOnLoad();
   setInterval(tick, 1000);
   setInterval(()=>saveGame(true), 20000);
 }
@@ -1247,11 +1576,22 @@ function tick(){
     state.qi += rate;
     state.stats.totalQiEver += rate;
   }
+  state.stats.playtimeSec = (state.stats.playtimeSec||0) + 1;
   checkAchievements();
   renderTopBar();
   if(state.currentTab==="cultivate") renderCultivateNumbers();
 }
 window.addEventListener("beforeunload", ()=>{ try{ saveGame(true); }catch(e){} });
+
+/* ---------- PWA: register service worker for offline play & installability ---------- */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("./service-worker.js")
+      .then(()=>console.log("Qi Ascendant: service worker registered."))
+      .catch((e)=>console.warn("Service worker registration failed:", e));
+  });
+}
+
 init();
 </script>
 </body>
